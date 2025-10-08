@@ -1,0 +1,126 @@
+# snake_game.py
+import pygame
+import random
+import sys
+
+# Initialize
+pygame.init()
+clock = pygame.time.Clock()
+
+# Window size
+WIDTH, HEIGHT = 600, 400
+CELL = 20
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Snake Game - Simple")
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (0, 180, 0)
+RED = (200, 0, 0)
+GRAY = (40, 40, 40)
+
+# Font
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 64)
+
+def draw_text(text, font, color, surface, x, y):
+    img = font.render(text, True, color)
+    rect = img.get_rect()
+    rect.topleft = (x, y)
+    surface.blit(img, rect)
+
+def random_food_position():
+    x = random.randint(0, (WIDTH - CELL) // CELL) * CELL
+    y = random.randint(0, (HEIGHT - CELL) // CELL) * CELL
+    return (x, y)
+
+def game_loop():
+    snake = [(WIDTH//2, HEIGHT//2)]
+    dx, dy = 0, 0
+    speed = 10  # frames per second
+    food = random_food_position()
+    score = 0
+    running = True
+    game_over = False
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if not game_over:
+                    if event.key == pygame.K_UP and dy == 0:
+                        dx, dy = 0, -CELL
+                    elif event.key == pygame.K_DOWN and dy == 0:
+                        dx, dy = 0, CELL
+                    elif event.key == pygame.K_LEFT and dx == 0:
+                        dx, dy = -CELL, 0
+                    elif event.key == pygame.K_RIGHT and dx == 0:
+                        dx, dy = CELL, 0
+                else:
+                    # On game over, press R to restart
+                    if event.key == pygame.K_r:
+                        return True  # restart
+                    if event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
+
+        if not game_over:
+            # move snake
+            if dx != 0 or dy != 0:
+                new_head = (snake[0][0] + dx, snake[0][1] + dy)
+                snake.insert(0, new_head)
+                # check food collision
+                if snake[0] == food:
+                    score += 1
+                    food = random_food_position()
+                else:
+                    snake.pop()  # remove tail
+
+            # check collisions with walls
+            head_x, head_y = snake[0]
+            if head_x < 0 or head_x >= WIDTH or head_y < 0 or head_y >= HEIGHT:
+                game_over = True
+
+            # check self collision
+            if snake[0] in snake[1:]:
+                game_over = True
+
+        # draw
+        screen.fill(BLACK)
+        # grid (optional)
+        for gx in range(0, WIDTH, CELL):
+            pygame.draw.line(screen, GRAY, (gx, 0), (gx, HEIGHT))
+        for gy in range(0, HEIGHT, CELL):
+            pygame.draw.line(screen, GRAY, (0, gy), (WIDTH, gy))
+
+        # draw food
+        pygame.draw.rect(screen, RED, (food[0], food[1], CELL, CELL))
+        # draw snake
+        for i, part in enumerate(snake):
+            color = GREEN if i == 0 else (0, 120, 0)
+            pygame.draw.rect(screen, color, (part[0], part[1], CELL, CELL))
+
+        # HUD
+        draw_text(f"Score: {score}", font, WHITE, screen, 10, 10)
+
+        if game_over:
+            draw_text("GAME OVER", big_font, RED, screen, WIDTH//2 - 140, HEIGHT//2 - 40)
+            draw_text("Press R to Restart or Q to Quit", font, WHITE, screen, WIDTH//2 - 170, HEIGHT//2 + 30)
+
+        pygame.display.flip()
+        clock.tick(speed)
+
+    return False
+
+def main():
+    while True:
+        restart = game_loop()
+        if not restart:
+            break
+
+if __name__ == "__main__":
+    main()
